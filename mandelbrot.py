@@ -1,4 +1,6 @@
+from itertools import repeat
 import time
+from concurrent.futures import ProcessPoolExecutor
 import numpy as np
 
 
@@ -21,18 +23,23 @@ class PerfTimer(object):
         return '{}: {} seconds'.format(self.name, self.elapsed)
 
 
-def mandelbrot(n, m, xmin, xmax, ymin, ymax, itermax=100, threshold=2.0):
+def complex_plane(n, m, min, max):
+    """Create n*m grid of complex numbers from *min* to *max*."""
+    assert min.real < max.real and min.imag < max.imag
+    ix, iy = np.mgrid[0:n, 0:m]
+    x = np.linspace(min.real, max.real, n, endpoint=False)[ix]
+    y = np.linspace(min.imag, max.imag, m, endpoint=False)[iy]
+    c = x + complex(0, 1) * y
+    del ix, iy, x, y
+    return c
+
+
+def mandelbrot(n, m, min, max, itermax=100, threshold=2.0):
     """NumPy-based Mandelbrot set calculation, based on
     http://thesamovar.wordpress.com/2009/03/22/fast-fractals-with-python-and-numpy/
     """
     with PerfTimer('setup'):
-        # Create n*m grid of complex numbers covering the x-y range
-        ix, iy = np.mgrid[0:n, 0:m]
-        x = np.linspace(xmin, xmax, n)[ix]
-        y = np.linspace(ymin, ymax, m)[iy]
-        c = x + complex(0, 1) * y
-        # Free up some memory
-        del x, y, ix, iy
+        c = complex_plane(n, m, min, max)
 
         # Flatten arrays, since dimensions don't matter for the calculations
         # (we can reshape for the final result)
@@ -68,7 +75,18 @@ if __name__ == '__main__':
     import pylab
 
     with PerfTimer('total'):
-        img = mandelbrot(1500, 1500, -2, 2, -2, 2, 200, 2.0)
+        min, max = -2 - 2j, 2 + 2j
+        n, m = 2, 4
+        w, h = 1024, 512
+        ws = repeat(w)
+        hs = repeat(h)
+        mins = complex_plane(n, m, min, max).flatten()
+        maxs = mins + complex((max.real - min.real) / n, (max.imag - min.imag) / m)
+        iters = repeat(200)
+        thresholds = repeat(2.0)
+        with ProcessPoolExecutor(max_workers=2) as executor:
+            imgs = list(executor.map(mandelbrot, ws, hs, mins, maxs, iters, thresholds))
+        img = np.array(imgs).reshape((n, m, w, h)).transpose((0, 2, 1, 3)).reshape((n * w, m * h))
 
     pylab.imshow(img.T, origin='lower left')
     pylab.show()
