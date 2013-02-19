@@ -32,15 +32,17 @@ def mandelbrot(n, m, xmin, xmax, ymin, ymax, itermax=100, threshold=2.0):
         y = np.linspace(ymin, ymax, m)[iy]
         c = x + complex(0, 1) * y
         # Free up some memory
-        del x, y
-
-        # Where we're going to store our iteration counts
-        img = np.zeros(c.shape, dtype=int)
+        del x, y, ix, iy
 
         # Flatten arrays, since dimensions don't matter for the calculations
-        ix.shape = iy.shape = c.shape = n * m
+        # (we can reshape for the final result)
+        c.shape = n * m
+        # Where we're going to store our iteration counts
+        img = np.zeros(c.shape, dtype=np.uint16)
+        # The points that still remain
+        r = np.arange(n * m, dtype=int)
 
-        # z0 = c, start iterating
+        # z0 = c
         z = np.copy(c)
 
     with PerfTimer('calculate'):
@@ -49,15 +51,16 @@ def mandelbrot(n, m, xmin, xmax, ymin, ymax, itermax=100, threshold=2.0):
             np.multiply(z, z, z)
             np.add(z, c, z)
             # Find points that have escaped
-            rem = abs(z) > threshold
+            done = abs(z) > threshold
             # Save the iteration counts
-            img[ix[rem], iy[rem]] = i + 1
+            img[r[done]] = i + 1
             # Remove points that have escaped
-            rem = -rem
+            rem = -done
+            r = r[rem]
             z = z[rem]
-            ix, iy = ix[rem], iy[rem]
             c = c[rem]
 
+    img.shape = (n, m)
     return img
 
 
