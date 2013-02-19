@@ -1,34 +1,9 @@
 from itertools import repeat
-import time
 from concurrent.futures import ProcessPoolExecutor
+
 import numpy as np
 
-
-class PerfTimer(object):
-    def __init__(self, name, verbose=True):
-        self.name = name
-        self.verbose = verbose
-
-    def __enter__(self):
-        self._start = time.perf_counter()
-        return self
-
-    def __exit__(self, *args):
-        self._end = time.perf_counter()
-        self.elapsed = self._end - self._start
-        if self.verbose:
-            print(str(self))
-
-    def __str__(self):
-        return '{}: {} seconds'.format(self.name, self.elapsed)
-
-
-def complex_plane(n, m, min, max):
-    """Create n*m grid of complex numbers over ``[min, max)``."""
-    assert min.real < max.real and min.imag < max.imag
-    x = np.linspace(min.real, max.real, n, endpoint=False)
-    y = np.linspace(min.imag * 1j, max.imag * 1j, m, endpoint=False)
-    return x[:, None] + y[None, :]
+from pyfractal.util import PerfTimer, complex_plane
 
 
 def mandelbrot(n, m, min, max, itermax=100, threshold=2.0):
@@ -78,8 +53,10 @@ if __name__ == '__main__':
         maxs = mins + complex((max.real - min.real) / n, (max.imag - min.imag) / m)
         iters = repeat(200)
         thresholds = repeat(2.0)
+
         with ProcessPoolExecutor(max_workers=2) as executor:
             imgs = list(executor.map(mandelbrot, ws, hs, mins, maxs, iters, thresholds))
+
         img = np.array(imgs).reshape((n, m, w, h)).transpose((0, 2, 1, 3)).reshape((n * w, m * h))
 
     pylab.imshow(img.T, origin='lower left')
