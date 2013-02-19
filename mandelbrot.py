@@ -32,20 +32,17 @@ def complex_plane(n, m, min, max):
 
 
 def mandelbrot(n, m, min, max, itermax=100, threshold=2.0):
-    """NumPy-based Mandelbrot set calculation, based on
-    http://thesamovar.wordpress.com/2009/03/22/fast-fractals-with-python-and-numpy/
+    """Calculate the Mandelbrot Set for the range ``[min, max)``, at a
+    resolution of n*m.
     """
     with PerfTimer('setup'):
-        c = complex_plane(n, m, min, max)
-
-        # Flatten arrays, since dimensions don't matter for the calculations
-        # (we can reshape for the final result)
-        c.shape = n * m
+        # Get complex plane, and flatten it since axes don't matter during the
+        # calculations - we can reshape at the end
+        c = complex_plane(n, m, min, max).flatten()
         # Where we're going to store our iteration counts
-        img = np.zeros(c.shape, dtype=np.uint16)
+        img = np.zeros_like(c, dtype=np.uint16)
         # The points that still remain
         r = np.arange(n * m, dtype=int)
-
         # z0 = c
         z = np.copy(c)
 
@@ -64,7 +61,7 @@ def mandelbrot(n, m, min, max, itermax=100, threshold=2.0):
             z = z[rem]
             c = c[rem]
 
-    img.shape = (n, m)
+    img.reshape((n, m))
     return img
 
 
