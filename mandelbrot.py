@@ -24,14 +24,11 @@ class PerfTimer(object):
 
 
 def complex_plane(n, m, min, max):
-    """Create n*m grid of complex numbers from *min* to *max*."""
+    """Create n*m grid of complex numbers over ``[min, max)``."""
     assert min.real < max.real and min.imag < max.imag
-    ix, iy = np.mgrid[0:n, 0:m]
-    x = np.linspace(min.real, max.real, n, endpoint=False)[ix]
-    y = np.linspace(min.imag, max.imag, m, endpoint=False)[iy]
-    c = x + complex(0, 1) * y
-    del ix, iy, x, y
-    return c
+    x = np.linspace(min.real, max.real, n, endpoint=False)
+    y = np.linspace(min.imag * 1j, max.imag * 1j, m, endpoint=False)
+    return x[:, None] + y[None, :]
 
 
 def mandelbrot(n, m, min, max, itermax=100, threshold=2.0):
